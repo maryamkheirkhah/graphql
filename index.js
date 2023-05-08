@@ -30,7 +30,7 @@ function validateForm() {
     });
 
 }
-let form = document.getElementById("loginForm");
+let form = document.querySelector('form');
 form.addEventListener("submit", function (event) {
   event.preventDefault();
   validateForm();
