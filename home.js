@@ -79,14 +79,15 @@ function homePage() {
 }
 
 function renderChart(response) {
+    let allData = response.data.data.transaction.reverse();
     const chart = new frappe.Chart("#chart", {
       title: "Cumulative Line Chart",
       data: {
-        labels: response.data.data.transaction.map((t) => t.createdAt),
+        labels:allData.map((t) => t.createdAt),
         datasets: [
           {
             name: "Amount",
-            values: response.data.data.transaction
+            values: allData
               .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
               .map((t, i, a) => {
                 const cumulativeAmount = a
