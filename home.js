@@ -1,3 +1,5 @@
+
+
 function getUserId(query, token, callback) {
     // Send the GraphQL query to the endpoint
     axios.post('https://01.gritlab.ax/api/graphql-engine/v1/graphql', {
@@ -12,9 +14,11 @@ function getUserId(query, token, callback) {
             // Handle the response
             console.log(response);
             const id = response["data"]["data"]["user"][0]["id"];
+            const login = response["data"]["data"]["user"][0]["login"];
             const totalDown = response["data"]["data"]["user"][0]["totalDown"];
             const totalUp = response["data"]["data"]["user"][0]["totalUp"];
             const auditRatio = response["data"]["data"]["user"][0]["auditRatio"];
+            renderStatus(id,login, totalDown, totalUp, auditRatio);
             console.log('Response:', id, totalDown, totalUp, auditRatio);
             callback(id);
         })
@@ -75,89 +79,143 @@ function homePage() {
 }
 
 function renderChart(response) {
+    const chart = new frappe.Chart("#chart", {
+      title: "Cumulative Line Chart",
+      data: {
+        labels: response.data.data.transaction.map((t) => t.createdAt),
+        datasets: [
+          {
+            name: "Amount",
+            values: response.data.data.transaction
+              .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+              .map((t, i, a) => {
+                const cumulativeAmount = a
+                  .slice(0, i + 1)
+                  .reduce((sum, t) => sum + t.amount, 0);
+                return cumulativeAmount;
+              }),
+            chartType: "line",
+          },
+        ],
+      },
+      type: "axis-mixed",
+      height: 300,
+      colors: ["#1e90ff"],
+      axisOptions: {
+        xIsSeries: true,
+        x: {
+          label: "Date",
+          type: "timeseries",
+          tickFormat: "%b %d, %Y",
+        },
+        y: {
+          label: "Amount (cumulative)",
+        },
+      },
+    });
+  }
+  
+homePage();
 
-    const chart = document.getElementById("chart");
-    chart.setAttribute("width", "100%");
-    chart.setAttribute("height", "100%");
-    const currentDate = new Date();
+/* 
+function renderChart(response) {
+    console.log('Response:', response.data.data.transaction);
+    let allData = response.data.data.transaction;
+    const endDate = new Date();
 
     // Set the start date to 6 months ago
     const startDate = new Date();
-    startDate.setMonth(currentDate.getMonth() - 6);
-    // Set the min and max values of the x-axis scale
+    startDate.setMonth(endDate.getMonth() - 6);
+    const startMoment = moment(startDate);
+    const endMoment = moment(endDate);
+    const numDays = endMoment.diff(startMoment, "days") + 1;
+
     const scaleX = {
         minValue: startDate,
-        maxValue: currentDate,
-        step: "month",
+        maxValue: endDate,
+        numTicks: numDays,
+        step: "day",
         transform: {
             type: "date",
             all: "%M %d"
-        }
+        },
+        labels: []
+    };
+
+    for (let i = 0; i < numDays; i++) {
+        scaleX.labels.push(moment(startDate).add(i, "days").toDate());
     }
-    let dataArray = response.data.data.transaction;
+
     const data = {
         x: [],
         y: [],
         labels: []
     };
-    for (let i = dataArray.length - 1; i >= 0; i--) {
-        data.x.push(dataArray[i].createdAt);
-        data.y.push(dataArray[i].amount);
-        data.labels.push(dataArray[i].path.split('/').pop());
+
+    let cumulativeAmount = 0;
+    for (let i = 0; i < numDays; i++) {
+        const date = moment(startDate).add(i, "days").toDate();
+        let amount = 0;
+        for (let j = 0; j < allData.length; j++) {
+            const transaction = allData[j];
+            const transactionDate = new Date(transaction.createdAt);
+            if (moment(transactionDate).isSame(date, "day")) {
+                amount += transaction.amount;
+                data.labels.push(transaction.path);
+
+            }
+        }
+        cumulativeAmount += amount;
+        data.x.push(date);
+        data.y.push(cumulativeAmount);
+        //data.labels.push(moment(date).format("MMM DD"));
+        
     }
+
     console.log('Data:', data);
     console.log('X:', data.x);
     console.log('Y:', data.y);
     console.log('Labels:', data.labels);
-    // Create ZingChart
 
-    const chartData = {
-        type: 'chart',
+    const chart = new frappe.Chart("#chart", {
+        title: "Cumulative Amount",
         data: {
-            type: 'line',
-            series: [{
-                values: data.labels,
-                text: '%v',
-                backgroundColor: '#1E90FF',
-                marker: {
-                    visible: true
+            labels: data.labels,
+            datasets: [
+                {
+                    name: "Amount",
+                    values: data.y
                 }
-            }],
-            scaleX: {
-                labels: data.x
-            },
-            scaleY: {
-                labels: data.y
-            }
+            ]
         },
-        tooltip: {
-            text: '%node-label',
-            backgroundColor: '#1E90FF',
-            borderColor: '#1E90FF',
-            borderWidth: 2,
-            borderRadius: 5,
-            fontSize: 16,
-            padding: 10
-        },
-        height: '100%',
-        width: '100%'
-    };
-    console.log('Chart Data:', chartData);
-    /*             zingchart.exec("chart", "render", {
-        data: chartData
-    }); */
-    zingchart.render({
-        id: 'chart',
-        data: chartData,
-        height: '100%',
-        width: '100%',
-        output: 'canvas'
+        type: 'line',
+        height: 250,
+        colors: ["#1E90FF"],
+        axisOptions: {
+            xIsSeries: true,
+            x: scaleX
+                
+        }
+
     });
-
-    const xpList = response.data.data.transaction.map(transaction => transaction.amount);
-    console.log('XP List:', xpList);
-    const totalXp = xpList.reduce((acc, curr) => acc + curr, 0);
-    console.log('Total XP:', totalXp);
-
 }
-homePage();
+
+homePage(); */
+function renderStatus(id, login, totalDown, totalUp, auditRatio) {
+    // show user status on the page  create element
+    const status = document.createElement('div');
+    status.innerHTML = `
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">User Status</h5>
+            <p class="card-text">User Login: ${login}</p>
+            <p class="card-text">Total Down: ${totalDown}</p>
+            <p class="card-text">Total Up: ${totalUp}</p>
+            <p class="card-text">Audit Ratio: ${auditRatio}</p>
+        </div>
+    </div>
+    `;
+    document.getElementById('status').appendChild(status);
+    
+    
+}

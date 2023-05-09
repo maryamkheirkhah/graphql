@@ -1,21 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/frappe-charts@1.2.4/dist/frappe-charts.min.iife.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    
     <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
-    <script src="home.js" type= "module"></script>
+
+    <script src="home.js" type="module"></script>
+
     <!-- Include Axios library -->
     <title>Document</title>
+    <!-- fallback for no module support -->
+<!--     <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
+    <script src="https://cdn.zingchart.com/modules/"></script>
+ -->
 </head>
-<body>
-    <textarea id="text" cols="30" rows="10"></textarea>
-    <!-- <div id="chart"></div> -->
 
-    <svg id="chart"></svg>
+<body>
+  
+    <!-- <div id="chart"></div> -->
+    <div id="status"></div>
+    <div id="chart"></div>
 
 </body>
+
 </html>
