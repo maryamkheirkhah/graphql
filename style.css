@@ -87,3 +87,7 @@
     text-decoration: none;
     transition: all 0
   }
+  #chart {
+    width: 100%;
+    height: 400px; /* Set the height as per your requirement */
+  }

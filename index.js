@@ -1,12 +1,21 @@
 function validateForm() {
   console.log("validating form");
-  var username = document.forms["loginForm"]["username"].value;
-  var password = document.forms["loginForm"]["password"].value;
-  if (username == "" || password == "") {
+  
+  // Get the form data using FormData
+  const form = document.querySelector('form');
+  console.log("tseifbdfjglkdjfg")
+  const formData = new FormData(form);
+  
+  // Get the username and password fields from the form data
+  const username = formData.get('username');
+  const password = formData.get('password');
+  
+  // Check if the fields are empty
+  if (username === "" || password === "") {
     alert("Please fill in all fields.");
+    return;
   }
   const response = axios.post("https://01.gritlab.ax/api/auth/signin", {},
-
       {
         auth: {
           username: username,
@@ -20,12 +29,11 @@ function validateForm() {
       // Store the token in local storage
       localStorage.setItem('jwt', token);
       // Redirect to the home page
-      homePage();
-     //window.location.href = '/home.html';
-
-
+      console.log("redirecting to home page");
+     window.location.href = '/home.html';
     })
     .catch(function (error) {
+      console.log(error);
       alert(error)
     });
 
@@ -36,38 +44,4 @@ form.addEventListener("submit", function (event) {
   validateForm();
 });
 // 
-function homePage() {
-  /*   document.getElementById("text").innerHTML = "Welcome to the home page";
-   */
-  const token = localStorage.getItem('jwt');
-
-  console.log(token);
-  // Construct the GraphQL query
-  const query = `
-{
-  user {
-    id
-    login
-  }
-}
-`;
-
-  // Send the GraphQL query to the endpoint
-  axios.post('https://01.gritlab.ax/api/graphql-engine/v1/graphql', {
-      query
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    })
-    .then(response => {
-      // Handle the response
-      console.log(response);
-      console.log(response["data"]["data"]["user"][0]["login"]);
-    })
-    .catch(error => {
-      // Handle the error
-      console.error(error);
-    });
-}
+console.log("hello world");
