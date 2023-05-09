@@ -77,6 +77,24 @@ function homePage() {
     });
 
 }
+function renderStatus(id, login, totalDown, totalUp, auditRatio) {
+    // show user status on the page  create element
+    const status = document.createElement('div');
+    status.innerHTML = `
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">User Status</h5>
+            <p class="card-text">User Login: ${login}</p>
+            <p class="card-text">Total Down: ${totalDown}</p>
+            <p class="card-text">Total Up: ${totalUp}</p>
+            <p class="card-text">Audit Ratio: ${auditRatio}</p>
+        </div>
+    </div>
+    `;
+    document.getElementById('status').appendChild(status);
+    
+    
+}
 
 function renderChart(response) {
     let allData = response.data.data.transaction.reverse();
@@ -88,7 +106,6 @@ function renderChart(response) {
           {
             name: "Amount",
             values: allData
-              .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
               .map((t, i, a) => {
                 const cumulativeAmount = a
                   .slice(0, i + 1)
@@ -202,21 +219,3 @@ function renderChart(response) {
 }
 
 homePage(); */
-function renderStatus(id, login, totalDown, totalUp, auditRatio) {
-    // show user status on the page  create element
-    const status = document.createElement('div');
-    status.innerHTML = `
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">User Status</h5>
-            <p class="card-text">User Login: ${login}</p>
-            <p class="card-text">Total Down: ${totalDown}</p>
-            <p class="card-text">Total Up: ${totalUp}</p>
-            <p class="card-text">Audit Ratio: ${auditRatio}</p>
-        </div>
-    </div>
-    `;
-    document.getElementById('status').appendChild(status);
-    
-    
-}
