@@ -1,4 +1,52 @@
+function formatBytes(bytes, decimals = 1) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    let size = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+    if (size < 1) {
+      size = 1;
+    }
+    if (size * Math.pow(k, i) < bytes) {
+      size = size + 1;
+    }
+    return size + ' ' + sizes[i];
+  }
+  
+  
+  
+function progess(totalDown, totalUp) {
+    const audit = document.getElementById('audit');
+    // calcute the audit ratio = totatUp/totalDown
+    
+    let auditRatio = totalUp / totalDown;
+    let formatTotalDown = formatBytes(totalDown);
+    let formatTotalUp = formatBytes(totalUp);
+    const roundedNum = auditRatio.toFixed(1); // Rounded to 1 decimal place
 
+    audit.innerHTML = `
+     <div class="progress-bar">
+    <div class="progress-bar__title">Received:</div>
+    <div class="progress-bar__wrapper">
+    <div class="progress-bar__bar" style="width: ${formatTotalDown}%;"></div>
+    <div class="progress-bar__value">{${formatTotalDown}}%</div>
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-bar__title">Done:</div>
+    <div class="progress-bar__wrapper">
+    <div class="progress-bar__bar" style="width: ${formatTotalUp}%;"></div>
+    <div class="progress-bar__value">{${formatTotalUp}}%</div>
+    </div>
+    <div class="progress-bar__title">Audit Ratio:</div>
+        <div name="auditRatio">${roundedNum}</div>
+  </div>`
+}
+function updateTotalXP(totalXP) {
+    const totalXPDiv = document.getElementById('totalXP');
+    totalXPDiv.innerHTML = `<p class="card-text">Total XP: ${totalXP}</p>`;
+}
 
 function getUserId(query, token, callback) {
     // Send the GraphQL query to the endpoint
@@ -18,8 +66,13 @@ function getUserId(query, token, callback) {
             const totalDown = response["data"]["data"]["user"][0]["totalDown"];
             const totalUp = response["data"]["data"]["user"][0]["totalUp"];
             const auditRatio = response["data"]["data"]["user"][0]["auditRatio"];
-            renderStatus(id,login, totalDown, totalUp, auditRatio);
-            console.log('Response:', id, totalDown, totalUp, auditRatio);
+            const roundedAudit = auditRatio.toFixed(1); // Rounded to 1 decimal place
+            
+            let formatTotalDown = formatBytes(totalDown);
+            let formatTotalUp = formatBytes(totalUp);
+            renderStatus(id, login, formatTotalDown, formatTotalUp, roundedAudit);
+            progess(totalDown, totalUp);
+            console.log('Response:', id, formatBytes(totalDown), formatBytes(totalUp), roundedAudit);
             callback(id);
         })
         .catch(error => {
@@ -29,7 +82,7 @@ function getUserId(query, token, callback) {
 }
 
 
-function sendRequest(query, token) {
+function sendRequest(query, token,callback) {
     // Send the GraphQL query to the endpoint
     axios.post('https://01.gritlab.ax/api/graphql-engine/v1/graphql', {
             query
@@ -41,8 +94,10 @@ function sendRequest(query, token) {
         })
         .then(response => {
             // Handle the response
-            renderChart(response);
 
+            renderChart(response);
+            console.log('Response:', response.data.data.transaction);
+            callback(response.data.data.transaction);
         })
         .catch(error => {
             // Handle the error
@@ -50,7 +105,7 @@ function sendRequest(query, token) {
         });
 }
 
-function homePage() {
+function homePage(eventId = 20) {
     const token = localStorage.getItem('jwt');
     // Construct the GraphQL query
     const query = `{
@@ -63,159 +118,112 @@ function homePage() {
         }
     }
     `;
+
+
     getUserId(query, token, id => {
         const query2 = `
           query {
-            transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _eq: 20 } }) {
+            transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _eq:${eventId}} }) {
               amount
               path
               createdAt
             }
           }
         `;
-        sendRequest(query2, token);
+        const callbackTotal = (data) => {
+            // calculate total XP from data
+            let totalXP = 0;
+            data.forEach((t) => {
+                totalXP += t.amount;
+            });
+            let formatedXP = formatBytes(totalXP);
+            updateTotalXP(formatedXP);    
+        }
+        let data = sendRequest(query2, token, callbackTotal);
+
+        console.log("data inksfskfösfölsf", data)
     });
 
 }
-function renderStatus(id, login, totalDown, totalUp, auditRatio) {
+
+function renderStatus(id, login, totalDown, totalUp, auditRatio,totalXP) {
     // show user status on the page  create element
-    const status = document.createElement('div');
+    const status = document.getElementById('status');
     status.innerHTML = `
     <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">User Status</h5>
-            <p class="card-text">User Login: ${login}</p>
-            <p class="card-text">Total Down: ${totalDown}</p>
-            <p class="card-text">Total Up: ${totalUp}</p>
-            <p class="card-text">Audit Ratio: ${auditRatio}</p>
-        </div>
+    <div class="card-body">
+        <h5 class="card-title">${login}! See Your Awesome Status</h5>
+        <p class="card-text">Total Down: ${totalDown}</p>
+        <p class="card-text">Total Up: ${totalUp}</p>
+        <p class="card-text">Audit Ratio: ${auditRatio}</p>
+        <p class="card-text" id="totalXP" >Total XP: ${totalXP}</p>
+    </div>
     </div>
     `;
-    document.getElementById('status').appendChild(status);
-    
-    
+
+
 }
 
 function renderChart(response) {
+    console.log(response);
     let allData = response.data.data.transaction.reverse();
     const chart = new frappe.Chart("#chart", {
-      title: "Cumulative Line Chart",
-      data: {
-        labels:allData.map((t) => t.createdAt),
-        datasets: [
-          {
-            name: "Amount",
-            values: allData
-              .map((t, i, a) => {
-                const cumulativeAmount = a
-                  .slice(0, i + 1)
-                  .reduce((sum, t) => sum + t.amount, 0);
-                return cumulativeAmount;
-              }),
-            chartType: "line",
-          },
-        ],
-      },
-      type: "axis-mixed",
-      height: 300,
-      colors: ["#1e90ff"],
-      axisOptions: {
-        xIsSeries: true,
-        x: {
-          label: "Date",
-          type: "timeseries",
-          tickFormat: "%b %d, %Y",
-        },
-        y: {
-          label: "Amount (cumulative)",
-        },
-      },
-    });
-  }
-  
-homePage();
-
-/* 
-function renderChart(response) {
-    console.log('Response:', response.data.data.transaction);
-    let allData = response.data.data.transaction;
-    const endDate = new Date();
-
-    // Set the start date to 6 months ago
-    const startDate = new Date();
-    startDate.setMonth(endDate.getMonth() - 6);
-    const startMoment = moment(startDate);
-    const endMoment = moment(endDate);
-    const numDays = endMoment.diff(startMoment, "days") + 1;
-
-    const scaleX = {
-        minValue: startDate,
-        maxValue: endDate,
-        numTicks: numDays,
-        step: "day",
-        transform: {
-            type: "date",
-            all: "%M %d"
-        },
-        labels: []
-    };
-
-    for (let i = 0; i < numDays; i++) {
-        scaleX.labels.push(moment(startDate).add(i, "days").toDate());
-    }
-
-    const data = {
-        x: [],
-        y: [],
-        labels: []
-    };
-
-    let cumulativeAmount = 0;
-    for (let i = 0; i < numDays; i++) {
-        const date = moment(startDate).add(i, "days").toDate();
-        let amount = 0;
-        for (let j = 0; j < allData.length; j++) {
-            const transaction = allData[j];
-            const transactionDate = new Date(transaction.createdAt);
-            if (moment(transactionDate).isSame(date, "day")) {
-                amount += transaction.amount;
-                data.labels.push(transaction.path);
-
-            }
-        }
-        cumulativeAmount += amount;
-        data.x.push(date);
-        data.y.push(cumulativeAmount);
-        //data.labels.push(moment(date).format("MMM DD"));
-        
-    }
-
-    console.log('Data:', data);
-    console.log('X:', data.x);
-    console.log('Y:', data.y);
-    console.log('Labels:', data.labels);
-
-    const chart = new frappe.Chart("#chart", {
-        title: "Cumulative Amount",
+        title: "Line and Bar Chart",
         data: {
-            labels: data.labels,
-            datasets: [
+            labels: allData.map((t) => t.createdAt),
+            datasets: [{
+                    name: "Cumulative Amount",
+                    values: allData.map((t, i, a) => {
+                        const cumulativeAmount = a
+                            .slice(0, i + 1)
+                            .reduce((sum, t) => sum + t.amount, 0);
+                        return cumulativeAmount;
+                    }),
+                    chartType: "line",
+                },
                 {
                     name: "Amount",
-                    values: data.y
-                }
-            ]
+                    values: allData.map((t) => t.amount),
+                    chartType: "bar",
+                },
+            ],
         },
-        type: 'line',
-        height: 250,
-        colors: ["#1E90FF"],
+        type: "axis-mixed",
+        height: 300,
+        colors: ["#1e90ff", "#ff6384"],
         axisOptions: {
             xIsSeries: true,
-            x: scaleX
-                
-        }
-
+            x: {
+                label: "Date",
+                type: "timeseries",
+                tickFormat: "%b %d, %Y",
+            },
+            y: {
+                label: "Amount",
+            },
+        },
     });
 }
 
-homePage(); */
+
+const chartSelect = document.getElementById('chart-select');
+let eventId = 20;
+//20 school curriculum
+// 37 piscine js
+// 10 piscine go
+
+chartSelect.addEventListener('change', (event) => {
+    const chartName = event.target.value;
+    if (chartName === 'school-curriculum') {
+        eventId = 20;
+    } else if (chartName === 'piscine-js') {
+        console.log('piscine-js');
+        eventId = 37;
+
+    } else if (chartName === 'piscine-go') {
+        eventId = 10;
+    }
+    homePage(eventId);
+
+});
+homePage(eventId);
