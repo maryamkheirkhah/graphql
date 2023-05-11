@@ -19,28 +19,7 @@
 function progess(totalDown, totalUp) {
     const audit = document.getElementById('audit');
     // calcute the audit ratio = totatUp/totalDown
-    
-    let auditRatio = totalUp / totalDown;
-
-    const roundedNum = auditRatio.toFixed(1); // Rounded to 1 decimal place
-
-    audit.innerHTML = `
-     <div class="progress-bar">
-    <div class="progress-bar__title">Received:</div>
-    <div class="progress-bar__wrapper">
-    <div class="progress-bar__bar" style="width: ${totalDown}%;"></div>
-    <div class="progress-bar__value">{${totalDown}}%</div>
-    </div>
-  </div>
-  <div class="progress-bar">
-    <div class="progress-bar__title">Done:</div>
-    <div class="progress-bar__wrapper">
-    <div class="progress-bar__bar" style="width: ${totalUp}%;"></div>
-    <div class="progress-bar__value">{${totalUp}}%</div>
-    </div>
-    <div class="progress-bar__title">Audit Ratio:</div>
-        <div name="auditRatio">${roundedNum}</div>
-  </div>`
+    auditRatioRender(totalDown, totalUp);
 }
 function updateTotalXP(totalXP) {
     const totalXPDiv = document.getElementById('totalXP');
@@ -60,17 +39,17 @@ function getUserId(query, token, callback) {
         .then(response => {
             // Handle the response
             
-            console.log(response);
-            const id = response["data"]["data"]["user"][0]["id"];
-            const login = response["data"]["data"]["user"][0]["login"];
-            const totalDown = response["data"]["data"]["user"][0]["totalDown"];
-            const totalUp = response["data"]["data"]["user"][0]["totalUp"];
-            const auditRatio = response["data"]["data"]["user"][0]["auditRatio"];
+            let infoData = response["data"]["data"]["user"][0];
+            const id = infoData["id"];
+            const login = infoData["login"];
+            const totalDown = infoData["totalDown"];
+            const totalUp = infoData["totalUp"];
+            const auditRatio = infoData["auditRatio"];
+            
             const roundedAudit = auditRatio.toFixed(1); // Rounded to 1 decimal place
             
-            renderStatus(id, login, totalDown, totalUp, roundedAudit);
+            renderStatus(id, infoData["firstName"],infoData["lastName"], totalDown, totalUp, roundedAudit);
             progess(totalDown, totalUp);
-            console.log('Response:', id,totalDown, totalUp, roundedAudit);
             callback(id);
         })
         .catch(error => {
@@ -94,7 +73,6 @@ function sendRequest(query, token,callback) {
             // Handle the response
 
             renderChart(response);
-            console.log('Response:', response.data.data.transaction);
             callback(response.data.data.transaction);
         })
         .catch(error => {
@@ -104,7 +82,6 @@ function sendRequest(query, token,callback) {
 }
 
 function homePage(eventId = 20) {
-    console.log("eventId",eventId)
     const token = localStorage.getItem('jwt');
     // Construct the GraphQL query
     const query = `{
@@ -114,6 +91,9 @@ function homePage(eventId = 20) {
             totalUp
             totalDown
             auditRatio
+            email
+            firstName
+            lastName
         }
     }
     `;
@@ -121,7 +101,6 @@ function homePage(eventId = 20) {
  
     getUserId(query, token, id => {
         if (eventId === 20||eventId === 37)  {
-            console.log("id in here",id, eventId)
             query2 = `
                  query {
                    transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _eq:${eventId}} }) {
@@ -132,7 +111,6 @@ function homePage(eventId = 20) {
                  }
                `;
                }else{
-                   console.log("id",id, eventId)
                query2 =`
                query {
                  transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _in:[10,2] } }) {
@@ -156,13 +134,13 @@ function homePage(eventId = 20) {
 
 }
 
-function renderStatus(id, login, totalDown, totalUp, auditRatio,totalXP) {
+function renderStatus(id, firstName,lastName, totalDown, totalUp, auditRatio,totalXP) {
     // show user status on the page  create element
     const status = document.getElementById('status');
     status.innerHTML = `
     <div class="card">
     <div class="card-body">
-        <h5 class="card-title">${login}! See Your Awesome Status</h5>
+        <h5 class="card-title">Welcome ${firstName} ${lastName}!</h5>
         <p class="card-text">Received: ${totalDown}</p>
         <p class="card-text">Done: ${totalUp}</p>
         <p class="card-text">Audit Ratio: ${auditRatio}</p>
@@ -175,14 +153,20 @@ function renderStatus(id, login, totalDown, totalUp, auditRatio,totalXP) {
 }
 
 function renderChart(response) {
-    console.log(response);
-    let allData = response.data.data.transaction.reverse();
+    let allData = response.data.data.transaction.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const chart = new frappe.Chart("#chart", {
         title: "Line and Bar Chart",
         data: {
-            labels: allData.map((t) => t.createdAt),
+            labels: allData.map((t) => {
+                const date = new Date(t.createdAt);
+                const year = date.getFullYear();
+                const month = ("0" + (date.getMonth() + 1)).slice(-2);
+                const day = ("0" + date.getDate()).slice(-2);
+                const project = t.path.split("/")[3];
+                return `${year}-${month}-${day} (${project})`;
+            }),
             datasets: [{
-                    name: "Cumulative Amount",
+                    name: "Cumulative",
                     values: allData.map((t, i, a) => {
                         const cumulativeAmount = a
                             .slice(0, i + 1)
@@ -208,21 +192,30 @@ function renderChart(response) {
                 label: "Date",
                 type: "timeseries",
                 tickFormat: "%b %d, %Y",
+                tickInterval: "day"
             },
             y: {
                 label: " Amount",
             },
         },
     });
-    if (document.getElementsByClassName("legend-dataset-text")){
-        document.getElementsByClassName("legend-dataset-text")[0].x.baseVal[0].value = -10;   
-        document.getElementsByClassName("legend-dataset-text")[1].x.baseVal[0].value = 20;   
-    }
-       
-
-
 }
+function auditRatioRender(totalDown, totalUp) {
+    let audit = totalUp / totalDown;
 
+    const barChart = new frappe.Chart('#barChart', {
+        data: {
+            labels: [`Audit Ratio: ${audit} `],
+            datasets: [{name: 'Received', values: [totalDown]},{name: 'Done', values: [totalUp]}]
+          },
+          title: 'auditRatio',
+          type: 'bar',
+          colors: ['#ff6384', '#36a2eb'],
+          height: 500,
+          width : 500,
+          
+    });
+}
 
 const chartSelect = document.getElementById('chart-select');
 //20 school curriculum
@@ -234,11 +227,9 @@ chartSelect.addEventListener('change', (event) => {
     if (chartName === 'school-curriculum') {
         eventId = 20;
     } else if (chartName === 'piscine-js') {
-        console.log('piscine-js');
         eventId = 37;
 
     } else if (chartName === 'piscine-go') {
-        console.log('piscine-go');
         eventId = 10;
     
     }
