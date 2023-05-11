@@ -1,4 +1,4 @@
-function formatBytes(bytes, decimals = 1) {
+/* function formatBytes(bytes, decimals = 1) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
@@ -13,7 +13,7 @@ function formatBytes(bytes, decimals = 1) {
     }
     return size + ' ' + sizes[i];
   }
-  
+   */
   
   
 function progess(totalDown, totalUp) {
@@ -21,23 +21,22 @@ function progess(totalDown, totalUp) {
     // calcute the audit ratio = totatUp/totalDown
     
     let auditRatio = totalUp / totalDown;
-    let formatTotalDown = formatBytes(totalDown);
-    let formatTotalUp = formatBytes(totalUp);
+
     const roundedNum = auditRatio.toFixed(1); // Rounded to 1 decimal place
 
     audit.innerHTML = `
      <div class="progress-bar">
     <div class="progress-bar__title">Received:</div>
     <div class="progress-bar__wrapper">
-    <div class="progress-bar__bar" style="width: ${formatTotalDown}%;"></div>
-    <div class="progress-bar__value">{${formatTotalDown}}%</div>
+    <div class="progress-bar__bar" style="width: ${totalDown}%;"></div>
+    <div class="progress-bar__value">{${totalDown}}%</div>
     </div>
   </div>
   <div class="progress-bar">
     <div class="progress-bar__title">Done:</div>
     <div class="progress-bar__wrapper">
-    <div class="progress-bar__bar" style="width: ${formatTotalUp}%;"></div>
-    <div class="progress-bar__value">{${formatTotalUp}}%</div>
+    <div class="progress-bar__bar" style="width: ${totalUp}%;"></div>
+    <div class="progress-bar__value">{${totalUp}}%</div>
     </div>
     <div class="progress-bar__title">Audit Ratio:</div>
         <div name="auditRatio">${roundedNum}</div>
@@ -60,6 +59,7 @@ function getUserId(query, token, callback) {
         })
         .then(response => {
             // Handle the response
+            
             console.log(response);
             const id = response["data"]["data"]["user"][0]["id"];
             const login = response["data"]["data"]["user"][0]["login"];
@@ -68,11 +68,9 @@ function getUserId(query, token, callback) {
             const auditRatio = response["data"]["data"]["user"][0]["auditRatio"];
             const roundedAudit = auditRatio.toFixed(1); // Rounded to 1 decimal place
             
-            let formatTotalDown = formatBytes(totalDown);
-            let formatTotalUp = formatBytes(totalUp);
-            renderStatus(id, login, formatTotalDown, formatTotalUp, roundedAudit);
+            renderStatus(id, login, totalDown, totalUp, roundedAudit);
             progess(totalDown, totalUp);
-            console.log('Response:', id, formatBytes(totalDown), formatBytes(totalUp), roundedAudit);
+            console.log('Response:', id,totalDown, totalUp, roundedAudit);
             callback(id);
         })
         .catch(error => {
@@ -106,6 +104,7 @@ function sendRequest(query, token,callback) {
 }
 
 function homePage(eventId = 20) {
+    console.log("eventId",eventId)
     const token = localStorage.getItem('jwt');
     // Construct the GraphQL query
     const query = `{
@@ -118,26 +117,39 @@ function homePage(eventId = 20) {
         }
     }
     `;
-
-
+    let query2;
+ 
     getUserId(query, token, id => {
-        const query2 = `
-          query {
-            transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _eq:${eventId}} }) {
-              amount
-              path
-              createdAt
-            }
-          }
-        `;
+        if (eventId === 20||eventId === 37)  {
+            console.log("id in here",id, eventId)
+            query2 = `
+                 query {
+                   transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _eq:${eventId}} }) {
+                     amount
+                     path
+                     createdAt
+                   }
+                 }
+               `;
+               }else{
+                   console.log("id",id, eventId)
+               query2 =`
+               query {
+                 transaction(where: { userId: { _eq: ${id} },type: { _eq:xp }, eventId: { _in:[10,2] } }) {
+                   amount
+                   path
+                   createdAt
+                 }
+               }
+             `;
+               }
         const callbackTotal = (data) => {
             // calculate total XP from data
             let totalXP = 0;
             data.forEach((t) => {
                 totalXP += t.amount;
             });
-            let formatedXP = formatBytes(totalXP);
-            updateTotalXP(formatedXP);    
+            updateTotalXP(totalXP);    
         }
         let data = sendRequest(query2, token, callbackTotal);
     });
@@ -151,8 +163,8 @@ function renderStatus(id, login, totalDown, totalUp, auditRatio,totalXP) {
     <div class="card">
     <div class="card-body">
         <h5 class="card-title">${login}! See Your Awesome Status</h5>
-        <p class="card-text">Total Down: ${totalDown}</p>
-        <p class="card-text">Total Up: ${totalUp}</p>
+        <p class="card-text">Received: ${totalDown}</p>
+        <p class="card-text">Done: ${totalUp}</p>
         <p class="card-text">Audit Ratio: ${auditRatio}</p>
         <p class="card-text" id="totalXP" >Total XP: ${totalXP}</p>
     </div>
@@ -213,11 +225,10 @@ function renderChart(response) {
 
 
 const chartSelect = document.getElementById('chart-select');
-let eventId = 20;
 //20 school curriculum
 // 37 piscine js
 // 10 piscine go
-
+let eventId ;
 chartSelect.addEventListener('change', (event) => {
     const chartName = event.target.value;
     if (chartName === 'school-curriculum') {
@@ -227,9 +238,18 @@ chartSelect.addEventListener('change', (event) => {
         eventId = 37;
 
     } else if (chartName === 'piscine-go') {
+        console.log('piscine-go');
         eventId = 10;
+    
     }
     homePage(eventId);
 
+});
+const logoutBtn = document.querySelector('#logout-btn');
+
+logoutBtn.addEventListener('click', () => {
+  // Perform logout action here
+    localStorage.clear();
+    window.location.href = 'index.html';
 });
 homePage(eventId);
