@@ -30,7 +30,7 @@ function validateForm() {
       localStorage.setItem('jwt', token);
       // Redirect to the home page
       console.log("redirecting to home page");
-     window.location.href = './home.html';
+     window.location.href = 'graphql/home.html';
     })
     .catch(function (error) {
       console.log(error);
