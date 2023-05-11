@@ -1,9 +1,6 @@
-function validateForm() {
-  console.log("validating form");
-  
+function validateForm() {  
   // Get the form data using FormData
   const form = document.querySelector('form');
-  console.log("tseifbdfjglkdjfg")
   const formData = new FormData(form);
   
   // Get the username and password fields from the form data
@@ -29,8 +26,7 @@ function validateForm() {
       // Store the token in local storage
       localStorage.setItem('jwt', token);
       // Redirect to the home page
-      console.log("redirecting to home page");
-     window.location.href = 'graphql/home.html';
+     window.location.href = './home.html';
     })
     .catch(function (error) {
       console.log(error);
@@ -43,5 +39,3 @@ form.addEventListener("submit", function (event) {
   event.preventDefault();
   validateForm();
 });
-// 
-console.log("hello world");

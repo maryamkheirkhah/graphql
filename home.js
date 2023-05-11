@@ -140,8 +140,6 @@ function homePage(eventId = 20) {
             updateTotalXP(formatedXP);    
         }
         let data = sendRequest(query2, token, callbackTotal);
-
-        console.log("data inksfskfösfölsf", data)
     });
 
 }
@@ -185,6 +183,7 @@ function renderChart(response) {
                     name: "Amount",
                     values: allData.map((t) => t.amount),
                     chartType: "bar",
+                    
                 },
             ],
         },
@@ -199,10 +198,17 @@ function renderChart(response) {
                 tickFormat: "%b %d, %Y",
             },
             y: {
-                label: "Amount",
+                label: " Amount",
             },
         },
     });
+    if (document.getElementsByClassName("legend-dataset-text")){
+        document.getElementsByClassName("legend-dataset-text")[0].x.baseVal[0].value = -10;   
+        document.getElementsByClassName("legend-dataset-text")[1].x.baseVal[0].value = 20;   
+    }
+       
+
+
 }
 
 
