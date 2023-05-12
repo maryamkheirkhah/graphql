@@ -26,7 +26,7 @@ function validateForm() {
       // Store the token in local storage
       localStorage.setItem('jwt', token);
       // Redirect to the home page
-     window.location.href = 'graphql/home.html';
+     window.location.href = './home.html';
     })
     .catch(function (error) {
       console.log(error);
