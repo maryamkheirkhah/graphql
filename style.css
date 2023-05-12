@@ -113,14 +113,12 @@ a {
 
 }
 #barChart {
-  /* put it in center */
-  
+    
   margin: auto;
   width: 70%;
   height: 400px;
-  margin-bottom: 40px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-
+  margin-bottom: 100px;
+  
 }
 
 .card {

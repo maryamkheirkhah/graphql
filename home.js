@@ -83,6 +83,10 @@ function sendRequest(query, token,callback) {
 
 function homePage(eventId = 20) {
     const token = localStorage.getItem('jwt');
+    if (!token) {
+        // Redirect to the login page
+        window.location.href = './index.html';
+    }   
     // Construct the GraphQL query
     const query = `{
         user{
@@ -202,20 +206,26 @@ function renderChart(response) {
 }
 function auditRatioRender(totalDown, totalUp) {
     let audit = totalUp / totalDown;
-
+  
     const barChart = new frappe.Chart('#barChart', {
-        data: {
-            labels: [`Audit Ratio: ${audit} `],
-            datasets: [{name: 'Received', values: [totalDown]},{name: 'Done', values: [totalUp]}]
-          },
-          title: 'auditRatio',
-          type: 'bar',
-          colors: ['#ff6384', '#36a2eb'],
-          height: 500,
-          width : 500,
-          
+      data: {
+        labels: [`Audit Ratio${audit.toFixed(1)}`],
+        datasets: [{
+          name: 'Received',
+          values: [totalDown]
+        }, {
+          name: 'Done',
+          values: [totalUp]
+        }]
+      },
+      title: 'auditRatio',
+      type: 'bar',
+      colors: ['#ff6384', '#36a2eb'],
+      height: 500,
+      width: 500
     });
-}
+  }
+  
 
 const chartSelect = document.getElementById('chart-select');
 //20 school curriculum
